@@ -18,15 +18,16 @@ public class Ghprb {
 	private static final Logger logger = Logger.getLogger(Ghprb.class.getName());
 	private static final Pattern githubUserRepoPattern = Pattern.compile("^(http[s]?://[^/]*)/([^/]*)/([^/]*).*");
 
-	private HashSet<String>       admins;
-	private HashSet<String>       whitelisted;
-	private HashSet<String>       organisations;
-	private String                triggerPhrase;
-	private GhprbTrigger          trigger;
-	private GhprbRepository       repository;
-	private GhprbBuilds           builds;
-	private AbstractProject<?, ?> project;
-	private String                githubServer;
+	private HashSet<String>       				admins;
+	private HashSet<String>       				whitelisted;
+	private HashSet<String>       				organisations;
+	private HashSet<GhprbTrigger.BranchList>   	branchList;
+	private String                				triggerPhrase;
+	private GhprbTrigger          				trigger;
+	private GhprbRepository       				repository;
+	private GhprbBuilds           				builds;
+	private AbstractProject<?, ?> 				project;
+	private String                				githubServer;
 
 	private boolean checked = false;
 	
@@ -112,7 +113,15 @@ public class Ghprb {
 	public boolean isAdmin(String username){
 		return admins.contains(username);
 	}
-
+	public boolean isAllowedTarget(String branch){
+		if(branchList.isEmpty())
+			return true;
+		for (GhprbTrigger.BranchList b:branchList){
+			if (b.getBranchID().trim().equals(branch.trim()))
+				return true;
+		}
+		return false;
+	}
 	private boolean isInWhitelistedOrganisation(String username) {
 		for(String organisation : organisations){
 			if(getGitHub().isUserMemberOfOrganization(organisation,username)){
@@ -126,6 +135,13 @@ public class Ghprb {
 		return githubServer;
 	}
 
+	public boolean allowAllBranches() {
+		return branchList.isEmpty();
+	}
+
+	public String getAllowedBranches(){
+		return trigger.getTargetList();
+	}
 
 	/*               BUILDER                */
 
@@ -139,6 +155,8 @@ public class Ghprb {
 			if(gml == null) return this;
 
 			gml.trigger = trigger;
+			gml.branchList = new HashSet<GhprbTrigger.BranchList>(trigger.getBranchList());
+			gml.branchList.remove(new GhprbTrigger.BranchList(""));
 			gml.admins = new HashSet<String>(Arrays.asList(trigger.getAdminlist().split("\\s+")));
 			gml.admins.remove("");
 			gml.whitelisted = new HashSet<String>(Arrays.asList(trigger.getWhitelist().split("\\s+")));

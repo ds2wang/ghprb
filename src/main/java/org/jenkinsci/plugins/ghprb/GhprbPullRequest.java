@@ -9,7 +9,7 @@ import org.kohsuke.github.GHIssueComment;
 import org.kohsuke.github.GHPullRequest;
 
 /**
- * @author Honza Brázdil <jbrazdil@redhat.com>
+ * @author Honza Br��zdil <jbrazdil@redhat.com>
  */
 public class GhprbPullRequest{
 	private static final Logger logger = Logger.getLogger(GhprbPullRequest.class.getName());
@@ -81,9 +81,13 @@ public class GhprbPullRequest{
 			}
 			updated = pr.getUpdatedAt();
 		}
-
-		checkMergeable(pr);
-		tryBuild();
+		if(!isAllowedTarget()){
+			shouldRun = false;
+		}
+		if(shouldRun){
+			checkMergeable(pr);
+			tryBuild();
+		}
 	}
 
 	public void check(GHIssueComment comment) {
@@ -94,8 +98,26 @@ public class GhprbPullRequest{
 			logger.log(Level.SEVERE, "Couldn't check comment #" + comment.getId(), ex);
 			return;
 		}
-		tryBuild();
+
+		if(!isAllowedTarget()){
+			shouldRun = false;
+		}
+		if(shouldRun){
+			tryBuild();
+		}
 	}
+
+	public boolean isAllowedTarget(){
+		boolean allowAll = ml.allowAllBranches();
+		if (!allowAll){
+			if (ml.isAllowedTarget(target)){
+				return true;
+			}
+			logger.log(Level.INFO, "Pull request builder: pr #{0} target branch of {1} isn't our allowed target branches of "+ml.getAllowedBranches(), new Object[]{id, target});
+		}
+		return false;
+	}
+	
 
 	private boolean isUpdated(GHPullRequest pr){
 		boolean ret = false;

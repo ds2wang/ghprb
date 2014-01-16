@@ -1,7 +1,9 @@
 package org.jenkinsci.plugins.ghprb;
 
 import antlr.ANTLRException;
+
 import com.coravy.hudson.plugins.github.GithubProjectProperty;
+
 import hudson.Extension;
 import hudson.model.AbstractProject;
 import hudson.model.Item;
@@ -11,20 +13,26 @@ import hudson.model.ParametersAction;
 import hudson.model.ParametersDefinitionProperty;
 import hudson.model.StringParameterValue;
 import hudson.model.queue.QueueTaskFuture;
+import hudson.plugins.git.GitPublisher.BranchToPush;
 import hudson.triggers.TimerTrigger;
 import hudson.triggers.Trigger;
 import hudson.triggers.TriggerDescriptor;
 import hudson.util.FormValidation;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+
 import javax.servlet.ServletException;
+
 import net.sf.json.JSONObject;
+
 import org.kohsuke.github.GHAuthorization;
 import org.kohsuke.github.GHCommitState;
 import org.kohsuke.github.GitHub;
@@ -33,9 +41,28 @@ import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
 /**
- * @author Honza Brázdil <jbrazdil@redhat.com>
+ * @author Honza Br������������������zdil <jbrazdil@redhat.com>
  */
 public final class GhprbTrigger extends Trigger<AbstractProject<?, ?>> {
+	
+    public static class BranchList {
+        private String branchID;
+
+        public String getBranchID() {
+            return branchID;
+        }
+        public String toString(){
+        	return branchID;
+        }
+        public boolean equals(Object o){
+        	return this.toString().trim().equals(o.toString().trim());
+        }
+
+        @DataBoundConstructor
+        public BranchList(String branchID) {
+            this.branchID = branchID.trim();
+        }
+    }
 	private static final Logger logger = Logger.getLogger(GhprbTrigger.class.getName());
 	private final String adminlist;
 	private       String whitelist;
@@ -45,13 +72,16 @@ public final class GhprbTrigger extends Trigger<AbstractProject<?, ?>> {
 	private final Boolean onlyTriggerPhrase;
 	private final Boolean useGitHubHooks;
 	private final Boolean permitAll;
+	private final String allowedTarget;
+	private final String targetList;
+	private final List<BranchList> branchList;
 	private Boolean autoCloseFailedPullRequests;
 
 	transient private Ghprb ml;
 
 	@DataBoundConstructor
 	public GhprbTrigger(String adminlist, String whitelist, String orgslist, String cron, String triggerPhrase,
-			Boolean onlyTriggerPhrase, Boolean useGitHubHooks, Boolean permitAll, Boolean autoCloseFailedPullRequests) throws ANTLRException{
+			Boolean onlyTriggerPhrase, Boolean useGitHubHooks, Boolean permitAll, List<BranchList> branchList, Boolean autoCloseFailedPullRequests) throws ANTLRException{
 		super(cron);
 		this.adminlist = adminlist;
 		this.whitelist = whitelist;
@@ -61,6 +91,7 @@ public final class GhprbTrigger extends Trigger<AbstractProject<?, ?>> {
 		this.onlyTriggerPhrase = onlyTriggerPhrase;
 		this.useGitHubHooks = useGitHubHooks;
 		this.permitAll = permitAll;
+		this.branchList = branchList;
 		this.autoCloseFailedPullRequests = autoCloseFailedPullRequests;
 	}
 
@@ -149,6 +180,29 @@ public final class GhprbTrigger extends Trigger<AbstractProject<?, ?>> {
 		return adminlist;
 	}
 
+	public List<BranchList> getBranchList(){
+		List<BranchList> bList=new ArrayList<BranchList>(); 
+		if(branchList==null)
+			return new ArrayList<BranchList>();
+		for(BranchList b:branchList){
+			if(!b.getBranchID().trim().equals(""))
+				bList.add(b);
+		}
+		return bList;
+	}
+	
+	public String getTargetList() {
+		String branchListStr="";
+		if(branchList==null){
+			return "";
+		}
+		for(BranchList b:branchList){
+			if(!b.getBranchID().trim().equals(""))
+				branchListStr+=b.getBranchID();
+		}
+		return branchListStr;
+	}
+	
 	public String getWhitelist() {
 		if(whitelist == null){
 			return "";
@@ -219,6 +273,7 @@ public final class GhprbTrigger extends Trigger<AbstractProject<?, ?>> {
 		private String password;
 		private String accessToken;
 		private String adminlist;
+		private List<BranchList> branchList;
 		private String publishedURL;
 		private String requestForTestingPhrase;
 		private String whitelistPhrase = ".*add\\W+to\\W+whitelist.*";
@@ -255,22 +310,7 @@ public final class GhprbTrigger extends Trigger<AbstractProject<?, ?>> {
 
 		@Override
 		public boolean configure(StaplerRequest req, JSONObject formData) throws FormException {
-			serverAPIUrl = formData.getString("serverAPIUrl");
-			username = formData.getString("username");
-			password = formData.getString("password");
-			accessToken = formData.getString("accessToken");
-			adminlist = formData.getString("adminlist");
-			publishedURL = formData.getString("publishedURL");
-			requestForTestingPhrase = formData.getString("requestForTestingPhrase");
-			whitelistPhrase = formData.getString("whitelistPhrase");
-			okToTestPhrase = formData.getString("okToTestPhrase");
-			retestPhrase = formData.getString("retestPhrase");
-			cron = formData.getString("cron");
-			useComments = formData.getBoolean("useComments");
-			unstableAs = formData.getString("unstableAs");
-			autoCloseFailedPullRequests = formData.getBoolean("autoCloseFailedPullRequests");
-			msgSuccess = formData.getString("msgSuccess");
-			msgFailure = formData.getString("msgFailure");
+            req.bindJSON(this, formData);
 			save();
 			gh = new GhprbGitHub();
 			return super.configure(req,formData);
@@ -311,7 +351,9 @@ public final class GhprbTrigger extends Trigger<AbstractProject<?, ?>> {
 		public String getAdminlist() {
 			return adminlist;
 		}
-
+		public List<BranchList> getBranchList() {
+			return branchList;
+		}
 		public String getPublishedURL() {
 			return publishedURL;
 		}

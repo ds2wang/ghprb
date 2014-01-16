@@ -56,6 +56,7 @@ public class GhprbBuilds {
 	}
 
 	public void onStarted(AbstractBuild build) {
+		logger.log(Level.INFO, "onStarted has been TRIGGERED");
 		GhprbCause c = getCause(build);
 		if(c == null) return;
 
@@ -68,6 +69,7 @@ public class GhprbBuilds {
 	}
 
 	public void onCompleted(AbstractBuild build) {
+		logger.log(Level.INFO, "onCompleted has been TRIGGERED");
 		GhprbCause c = getCause(build);
 		if(c == null) return;
 
