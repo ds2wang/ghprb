@@ -9,7 +9,7 @@ import org.kohsuke.github.GHIssueComment;
 import org.kohsuke.github.GHPullRequest;
 
 /**
- * @author Honza Br��zdil <jbrazdil@redhat.com>
+ * @author Honza Brázdil <jbrazdil@redhat.com>
  */
 public class GhprbPullRequest{
 	private static final Logger logger = Logger.getLogger(GhprbPullRequest.class.getName());
@@ -113,7 +113,7 @@ public class GhprbPullRequest{
 			if (ml.isAllowedTarget(target)){
 				return true;
 			}
-			logger.log(Level.INFO, "Pull request builder: pr #{0} target branch of {1} isn't our allowed target branches of "+ml.getAllowedBranches(), new Object[]{id, target});
+			logger.log(Level.FINE, "Pull request builder: pr #{0} target branch of {1} isn't our allowed target branches of "+ml.getAllowedBranches(), new Object[]{id, target});
 		}
 		return false;
 	}

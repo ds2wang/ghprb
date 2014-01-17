@@ -1,9 +1,7 @@
 package org.jenkinsci.plugins.ghprb;
 
 import antlr.ANTLRException;
-
 import com.coravy.hudson.plugins.github.GithubProjectProperty;
-
 import hudson.Extension;
 import hudson.model.AbstractProject;
 import hudson.model.Item;
@@ -13,12 +11,10 @@ import hudson.model.ParametersAction;
 import hudson.model.ParametersDefinitionProperty;
 import hudson.model.StringParameterValue;
 import hudson.model.queue.QueueTaskFuture;
-import hudson.plugins.git.GitPublisher.BranchToPush;
 import hudson.triggers.TimerTrigger;
 import hudson.triggers.Trigger;
 import hudson.triggers.TriggerDescriptor;
 import hudson.util.FormValidation;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,11 +24,8 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
-
 import javax.servlet.ServletException;
-
 import net.sf.json.JSONObject;
-
 import org.kohsuke.github.GHAuthorization;
 import org.kohsuke.github.GHCommitState;
 import org.kohsuke.github.GitHub;
@@ -41,7 +34,7 @@ import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
 /**
- * @author Honza Br������������������zdil <jbrazdil@redhat.com>
+ * @author Honza Brázdil <jbrazdil@redhat.com>
  */
 public final class GhprbTrigger extends Trigger<AbstractProject<?, ?>> {
 	
@@ -72,8 +65,6 @@ public final class GhprbTrigger extends Trigger<AbstractProject<?, ?>> {
 	private final Boolean onlyTriggerPhrase;
 	private final Boolean useGitHubHooks;
 	private final Boolean permitAll;
-	private final String allowedTarget;
-	private final String targetList;
 	private final List<BranchList> branchList;
 	private Boolean autoCloseFailedPullRequests;
 
