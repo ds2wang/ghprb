@@ -298,7 +298,6 @@ public final class GhprbTrigger extends Trigger<AbstractProject<?, ?>> {
 		private String password;
 		private String accessToken;
 		private String adminlist;
-		private List<BranchList> branchList;
 		private String publishedURL;
 		private String requestForTestingPhrase;
 		private String whitelistPhrase = ".*add\\W+to\\W+whitelist.*";
@@ -336,7 +335,24 @@ public final class GhprbTrigger extends Trigger<AbstractProject<?, ?>> {
 
 		@Override
 		public boolean configure(StaplerRequest req, JSONObject formData) throws FormException {
-			req.bindJSON(this, formData);
+			//req.bindJSON(this, formData);
+			serverAPIUrl = formData.getString("serverAPIUrl");
+			username = formData.getString("username");
+			password = formData.getString("password");
+			accessToken = formData.getString("accessToken");
+			adminlist = formData.getString("adminlist");
+			publishedURL = formData.getString("publishedURL");
+			requestForTestingPhrase = formData.getString("requestForTestingPhrase");
+			whitelistPhrase = formData.getString("whitelistPhrase");
+			okToTestPhrase = formData.getString("okToTestPhrase");
+			retestPhrase = formData.getString("retestPhrase");
+			cron = formData.getString("cron");
+			useComments = formData.getBoolean("useComments");
+			logExcerptLines = formData.getInt("logExcerptLines");
+			unstableAs = formData.getString("unstableAs");
+			autoCloseFailedPullRequests = formData.getBoolean("autoCloseFailedPullRequests");
+			msgSuccess = formData.getString("msgSuccess");
+			msgFailure = formData.getString("msgFailure");
 			save();
 			gh = new GhprbGitHub();
 			return super.configure(req,formData);
@@ -378,10 +394,6 @@ public final class GhprbTrigger extends Trigger<AbstractProject<?, ?>> {
 			return adminlist;
 		}
 
-		public List<BranchList> getBranchList() {
-			return branchList;
-		}
-		
 		public String getPublishedURL() {
 			return publishedURL;
 		}
